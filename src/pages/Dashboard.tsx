@@ -5,7 +5,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/Navbar";
 import { TaskCard } from "@/components/TaskCard";
 import { AddTaskModal } from "@/components/AddTaskModal";
-import { AiQuickAdd } from "@/components/AiQuickAdd";
 import { StatsBar } from "@/components/StatsBar";
 import { supabase, type Task } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,28 +58,18 @@ export default function Dashboard() {
     }
   };
 
-  const addManyTasks = async (titles: string[]) => {
-    if (!user) return;
-    const rows = titles.map((title) => ({
-      user_id: user.id,
-      title,
-      priority: "medium" as const,
-      completed: false,
-    }));
-    const { error } = await supabase.from("tasks").insert(rows);
-    if (error) toast.error(error.message);
-    else fetchTasks();
-  };
-
   const toggleTask = async (task: Task) => {
     const { error } = await supabase
       .from("tasks")
       .update({ completed: !task.completed })
       .eq("id", task.id);
+
     if (error) toast.error(error.message);
     else {
       setTasks((prev) =>
-        prev.map((t) => (t.id === task.id ? { ...t, completed: !t.completed } : t))
+        prev.map((t) =>
+          t.id === task.id ? { ...t, completed: !t.completed } : t
+        )
       );
     }
   };
@@ -89,6 +78,7 @@ export default function Dashboard() {
     const prev = tasks;
     setTasks((p) => p.filter((t) => t.id !== id));
     const { error } = await supabase.from("tasks").delete().eq("id", id);
+
     if (error) {
       toast.error(error.message);
       setTasks(prev);
@@ -117,6 +107,7 @@ export default function Dashboard() {
               Let's make today productive.
             </p>
           </div>
+
           <Button onClick={() => setModalOpen(true)} size="lg" className="shadow-glow">
             <Plus className="h-4 w-4" />
             <span className="ml-1.5">New task</span>
@@ -125,13 +116,12 @@ export default function Dashboard() {
 
         <StatsBar tasks={tasks} />
 
-        <AiQuickAdd onAdd={addTask} onAddMany={addManyTasks} />
-
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-muted-foreground">
             <Filter className="mr-1 inline h-3.5 w-3.5" />
             Your tasks
           </h3>
+
           <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterMode)}>
             <TabsList className="h-8">
               <TabsTrigger value="all" className="h-6 text-xs">All</TabsTrigger>
@@ -169,7 +159,11 @@ export default function Dashboard() {
         )}
       </main>
 
-      <AddTaskModal open={modalOpen} onOpenChange={setModalOpen} onSubmit={addTask} />
+      <AddTaskModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSubmit={addTask}
+      />
     </div>
   );
 }

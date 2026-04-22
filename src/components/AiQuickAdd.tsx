@@ -3,7 +3,7 @@ import { Loader2, Sparkles, Wand2, ListTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { breakdownTask, isAiConfigured, parseNaturalLanguage } from "@/lib/ai";
+import { breakdownTask, parseNaturalLanguage } from "@/lib/ai";
 import type { Task } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -13,6 +13,12 @@ interface AiQuickAddProps {
 }
 
 export function AiQuickAdd({ onAdd, onAddMany }: AiQuickAddProps) {
+  // ✅ Check if Gemini key exists
+  const hasAI = !!import.meta.env.VITE_GEMINI_API_KEY;
+
+  // ✅ Hide entire component if no AI
+  if (!hasAI) return null;
+
   const [nlInput, setNlInput] = useState("");
   const [goalInput, setGoalInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,9 +34,9 @@ export function AiQuickAdd({ onAdd, onAddMany }: AiQuickAddProps) {
         priority: parsed.priority,
       });
       setNlInput("");
-      toast.success("Task added by AI ✨");
+      toast.success("Task added successfully ✨");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI failed");
+      toast.error("AI feature unavailable");
     } finally {
       setLoading(false);
     }
@@ -41,24 +47,16 @@ export function AiQuickAdd({ onAdd, onAddMany }: AiQuickAddProps) {
     setLoading(true);
     try {
       const subtasks = await breakdownTask(goalInput);
-      if (!subtasks.length) throw new Error("No subtasks generated");
+      if (!subtasks.length) throw new Error();
       await onAddMany(subtasks);
       setGoalInput("");
-      toast.success(`AI created ${subtasks.length} subtasks ✨`);
+      toast.success(`Created ${subtasks.length} subtasks ✨`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI failed");
+      toast.error("AI feature unavailable");
     } finally {
       setLoading(false);
     }
   };
-
-  if (!isAiConfigured) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border bg-surface-muted p-4 text-center text-sm text-muted-foreground">
-        💡 Add <code className="rounded bg-surface px-1.5 py-0.5 text-xs">VITE_GEMINI_API_KEY</code> to <code>.env.local</code> to unlock AI features.
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-2xl border border-border bg-gradient-to-br from-accent to-surface p-4 shadow-card">
@@ -82,11 +80,15 @@ export function AiQuickAdd({ onAdd, onAddMany }: AiQuickAddProps) {
             value={nlInput}
             onChange={(e) => setNlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleNL()}
-            placeholder="e.g. Meeting with Sara tomorrow at 5pm"
+            placeholder="e.g. Meeting tomorrow at 5pm"
             disabled={loading}
           />
           <Button onClick={handleNL} disabled={loading || !nlInput.trim()} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
             <span className="ml-2">Parse & add</span>
           </Button>
         </TabsContent>
@@ -96,11 +98,15 @@ export function AiQuickAdd({ onAdd, onAddMany }: AiQuickAddProps) {
             value={goalInput}
             onChange={(e) => setGoalInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleBreakdown()}
-            placeholder="e.g. Prepare for technical interview"
+            placeholder="e.g. Prepare for interview"
             disabled={loading}
           />
           <Button onClick={handleBreakdown} disabled={loading || !goalInput.trim()} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ListTree className="h-4 w-4" />}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ListTree className="h-4 w-4" />
+            )}
             <span className="ml-2">Break into subtasks</span>
           </Button>
         </TabsContent>
